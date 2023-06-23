@@ -1,0 +1,3 @@
+0|1|abc|bac
+0|0|abc|abc
+1|2|abc|acb

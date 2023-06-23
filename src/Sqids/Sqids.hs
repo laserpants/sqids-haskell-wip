@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Sqids.Sqids (shuffle) where
+module Sqids.Sqids 
+  ( shuffle
+  , sqidsVersion
+  , defaultSqidsState
+  ) where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
@@ -13,6 +17,7 @@ import Control.Monad.Writer (WriterT)
 import Data.Char (ord)
 import Data.List (foldl')
 import Data.Text (Text)
+import Sqids.Utils (swapChars)
 
 import qualified Data.Text as Text
 
@@ -160,20 +165,6 @@ shuffle alphabet = foldl' mu alphabet ixs
        in swapChars i r chars
       where
         ordAt = ord . Text.index chars
-
-swapChars :: Int -> Int -> Text -> Text
-swapChars m n input =
-  replaceCharAtIndex n charAtIndexM (replaceCharAtIndex m charAtIndexN input)
-  where
-    charAtIndexM, charAtIndexN :: Char
-    charAtIndexM = Text.index input m
-    charAtIndexN = Text.index input n
-
-replaceCharAtIndex :: Int -> Char -> Text -> Text
-replaceCharAtIndex n char input = lhs <> Text.cons char rhs
-  where
-    lhs = Text.take n input
-    rhs = Text.drop (n + 1) input
 
 toId :: (Integral n) => n -> String -> String
 toId number alphabet =
