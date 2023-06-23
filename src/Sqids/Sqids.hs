@@ -6,7 +6,9 @@ import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, lift)
+import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Maybe (MaybeT)
+import Control.Monad.Trans.Select (SelectT)
 import Control.Monad.Writer (WriterT)
 import Data.Char (ord)
 import Data.List (foldl')
@@ -43,8 +45,14 @@ newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
 runSqidsT :: (Monad m) => SqidsState -> SqidsT m a -> m a
 runSqidsT _state = flip evalStateT _state . unwrapSqidsT
 
-runSqids :: Sqids a -> a
-runSqids = runIdentity . runSqidsT defaultSqidsState . unwrapSqids
+sqidsT :: (Monad m) => SqidsT m a -> m a
+sqidsT = runSqidsT defaultSqidsState
+
+runSqids :: SqidsState -> Sqids a -> a
+runSqids _state = runIdentity . runSqidsT _state . unwrapSqids
+
+sqids :: Sqids a -> a
+sqids = runSqids defaultSqidsState
 
 class MonadSqids m where
   encode :: (Integral n) => [n] -> m String
@@ -116,12 +124,25 @@ instance (Monad m, MonadSqids m) => MonadSqids (MaybeT m) where
   getBlacklist = lift getBlacklist
   setBlacklist = lift . setBlacklist
 
---encode :: (Integral n) => [n] -> Sqids String
---encode numbers = do
---  undefined
---
---decode :: (Integral n) => String -> Sqids [n]
---decode = undefined
+instance (Monad m, MonadSqids m) => MonadSqids (ContT r m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+instance (Monad m, MonadSqids m) => MonadSqids (SelectT r m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
 
 encodeNumbers :: (Integral n) => Bool -> [n] -> Sqids String
 encodeNumbers partitioned numbers =
@@ -168,10 +189,15 @@ isBlockedId _id =
 
 --
 
-foo :: Sqids Text
-foo = do
+example :: Text
+example = sqids $ do
   setAlphabet "xyz"
   getAlphabet
 
-example = runSqids foo
-
+example2 :: IO ()
+example2 = do 
+  s <- sqidsT $ do
+    setAlphabet "xyz"
+    getAlphabet
+  print s
+  pure ()
