@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Sqids.Sqids () where
+module Sqids.Sqids (shuffle) where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
