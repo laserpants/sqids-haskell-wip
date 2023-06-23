@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module Sqids.Sqids 
   ( shuffle
   , sqidsVersion
@@ -73,11 +74,11 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   getAlphabet = gets alphabet
-  setAlphabet alphabet = modify $ \old -> old{ alphabet = alphabet }
+  setAlphabet new = modify $ \old -> old{ alphabet = new }
   getMinLength = gets minLength
-  setMinLength minLength = modify $ \old -> old{ minLength = minLength }
+  setMinLength new = modify $ \old -> old{ minLength = new }
   getBlacklist = gets blacklist
-  setBlacklist blacklist = modify $ \old -> old{ blacklist = blacklist }
+  setBlacklist new = modify $ \old -> old{ blacklist = new }
 
 instance (Monad m, MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
