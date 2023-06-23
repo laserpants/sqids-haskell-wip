@@ -2,8 +2,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Sqids.Sqids () where
 
-import Control.Monad.State.Strict
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Identity (Identity, runIdentity)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, lift)
+import Control.Monad.Trans.Maybe (MaybeT)
+import Control.Monad.Writer (WriterT)
 import Data.Char (ord)
+import Data.List (foldl')
 import Data.Text (Text)
 
 import qualified Data.Text as Text
@@ -13,11 +19,11 @@ sqidsVersion :: String
 sqidsVersion = "?"
 
 data SqidsState = SqidsState
-  { alphabet  :: String    
+  { alphabet  :: Text
   -- ^ URL-safe characters
   , minLength :: Int       
   -- ^ The minimum allowed length of IDs
-  , blacklist :: [String]  
+  , blacklist :: [Text]  
   -- ^ A list of words that must never appear in IDs
   }
 
@@ -25,35 +31,110 @@ defaultSqidsState :: SqidsState
 defaultSqidsState = SqidsState
   { alphabet  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   , minLength = 0
-  , blacklist = undefined
+  , blacklist = []
   }
 
-newtype Sqids a = Sqids { exposeSqids :: State SqidsState a }
-  deriving (Functor, Applicative, Monad)
+newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsState m a }
+  deriving (Functor, Applicative, Monad, MonadState SqidsState, MonadTrans)
 
-encode :: (Integral n) => [n] -> Sqids String
-encode numbers = do
-  undefined
---  abc <- getAlphabet
---  pure "hello"
---  getAlphabet >=> \abc -> pure "hello"
+newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
+  deriving (Functor, Applicative, Monad, MonadState SqidsState, MonadSqids)
 
-decode :: (Integral n) => String -> Sqids [n]
-decode = undefined
+runSqidsT :: (Monad m) => SqidsState -> SqidsT m a -> m a
+runSqidsT _state = flip evalStateT _state . unwrapSqidsT
+
+runSqids :: Sqids a -> a
+runSqids = runIdentity . runSqidsT defaultSqidsState . unwrapSqids
+
+class MonadSqids m where
+  encode :: (Integral n) => [n] -> m String
+  decode :: (Integral n) => String -> m [n]
+  getAlphabet :: m Text
+  setAlphabet :: Text -> m ()
+  getMinLength :: m Int
+  setMinLength :: Int -> m ()
+  getBlacklist :: m [Text]
+  setBlacklist :: [Text] -> m ()
+
+instance (Monad m) => MonadSqids (SqidsT m) where
+  encode = undefined
+  decode = undefined
+  getAlphabet = gets alphabet
+  setAlphabet alphabet = modify $ \old -> old{ alphabet = alphabet }
+  getMinLength = gets minLength
+  setMinLength minLength = modify $ \old -> old{ minLength = minLength }
+  getBlacklist = gets blacklist
+  setBlacklist blacklist = modify $ \old -> old{ blacklist = blacklist }
+
+instance (Monad m, MonadSqids m) => MonadSqids (StateT s m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+instance (Monad m, MonadSqids m) => MonadSqids (ExceptT e m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+instance (Monad m, MonadSqids m) => MonadSqids (ReaderT r m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+instance (Monad m, MonadSqids m, Monoid w) => MonadSqids (WriterT w m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+instance (Monad m, MonadSqids m) => MonadSqids (MaybeT m) where
+  encode = lift . encode
+  decode = lift . decode
+  getAlphabet = lift getAlphabet
+  setAlphabet = lift . setAlphabet
+  getMinLength = lift getMinLength
+  setMinLength = lift . setMinLength
+  getBlacklist = lift getBlacklist
+  setBlacklist = lift . setBlacklist
+
+--encode :: (Integral n) => [n] -> Sqids String
+--encode numbers = do
+--  undefined
+--
+--decode :: (Integral n) => String -> Sqids [n]
+--decode = undefined
 
 encodeNumbers :: (Integral n) => Bool -> [n] -> Sqids String
 encodeNumbers partitioned numbers =
   undefined
 
 shuffle :: Text -> Text
-shuffle alphabet =
-  foldr mu alphabet (reverse ixs)
+shuffle alphabet = foldl' mu alphabet ixs
   where 
     ixs = [ (i, j) | i <- [ 0 .. len - 2 ], let j = len - i - 1 ]
     len = Text.length alphabet
     --
-    mu :: (Int, Int) -> Text -> Text
-    mu (i, j) chars =
+    mu :: Text -> (Int, Int) -> Text
+    mu chars (i, j) =
       let r = (i * j + ordAt i + ordAt j) `mod` len
        in swapChars i r chars
       where
@@ -68,8 +149,7 @@ swapChars m n input =
     charAtIndexN = Text.index input n
 
 replaceCharAtIndex :: Int -> Char -> Text -> Text
-replaceCharAtIndex n char input =
-  lhs <> Text.cons char rhs
+replaceCharAtIndex n char input = lhs <> Text.cons char rhs
   where
     lhs = Text.take n input
     rhs = Text.drop (n + 1) input
@@ -85,4 +165,13 @@ toNumber _id alphabet =
 isBlockedId :: String -> Bool
 isBlockedId _id =
   undefined
+
+--
+
+foo :: Sqids Text
+foo = do
+  setAlphabet "xyz"
+  getAlphabet
+
+example = runSqids foo
 
