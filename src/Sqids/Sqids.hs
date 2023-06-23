@@ -2,7 +2,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Sqids.Sqids () where
 
-import Control.Monad.State
+import Control.Monad.State.Strict
+import Data.Char (ord)
+import Data.Text (Text)
+
+import qualified Data.Text as Text
 
 -- | Sqids spec. version
 sqidsVersion :: String
@@ -14,7 +18,7 @@ data SqidsState = SqidsState
   , minLength :: Int       
   -- ^ The minimum allowed length of IDs
   , blacklist :: [String]  
-  -- ^ A list of words that must not appear in IDs
+  -- ^ A list of words that must never appear in IDs
   }
 
 defaultSqidsState :: SqidsState
@@ -25,12 +29,7 @@ defaultSqidsState = SqidsState
   }
 
 newtype Sqids a = Sqids { exposeSqids :: State SqidsState a }
- deriving (Functor, Applicative, Monad)
-
---getAlphabet :: Sqids String
---getAlphabet = Sqids $ do
---  a <- gets alphabet
---  undefined
+  deriving (Functor, Applicative, Monad)
 
 encode :: (Integral n) => [n] -> Sqids String
 encode numbers = do
@@ -46,9 +45,34 @@ encodeNumbers :: (Integral n) => Bool -> [n] -> Sqids String
 encodeNumbers partitioned numbers =
   undefined
 
-shuffle :: String -> String
+shuffle :: Text -> Text
 shuffle alphabet =
-  undefined
+  foldr mu alphabet (reverse ixs)
+  where 
+    ixs = [ (i, j) | i <- [ 0 .. len - 2 ], let j = len - i - 1 ]
+    len = Text.length alphabet
+    --
+    mu :: (Int, Int) -> Text -> Text
+    mu (i, j) chars =
+      let r = (i * j + ordAt i + ordAt j) `mod` len
+       in swapChars i r chars
+      where
+        ordAt = ord . Text.index chars
+
+swapChars :: Int -> Int -> Text -> Text
+swapChars m n input =
+  replaceCharAtIndex n charAtIndexM (replaceCharAtIndex m charAtIndexN input)
+  where
+    charAtIndexM, charAtIndexN :: Char
+    charAtIndexM = Text.index input m
+    charAtIndexN = Text.index input n
+
+replaceCharAtIndex :: Int -> Char -> Text -> Text
+replaceCharAtIndex n char input =
+  lhs <> Text.cons char rhs
+  where
+    lhs = Text.take n input
+    rhs = Text.drop (n + 1) input
 
 toId :: (Integral n) => n -> String -> String
 toId number alphabet =
