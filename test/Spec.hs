@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Sqids (shuffle, toId, toNumber)
+import Sqids.Sqids (shuffle, toId, toNumber, defaultSqidsState, runSqids, isBlockedId, SqidsState(..))
 import Sqids.Utils (swapChars)
 import Test.Hspec
 
@@ -38,6 +38,17 @@ testToNumber = do
     _ ->
       error "testToNumber: bad input"
 
+testIsBlockedId :: SpecWith ()
+testIsBlockedId = do
+  withTestData "isBlockedId" $ \case
+    blacklist : _id : result : _ ->
+      let msg = blacklist <> " " <> _id 
+          _words = pack <$> splitOn "," blacklist
+          _state = defaultSqidsState{ blacklist = _words }
+       in it msg (runSqids _state (isBlockedId (pack _id)) == read result)
+    _ ->
+      error "testIsBlockedId: bad input"
+
 testShuffle :: SpecWith ()
 testShuffle = do
   withTestData "shuffle" $ \case
@@ -53,3 +64,4 @@ main =
     testSwapChars
     testToId
     testToNumber
+    testIsBlockedId
