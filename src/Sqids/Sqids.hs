@@ -169,11 +169,11 @@ shuffle alphabet = foldl' mu alphabet ixs
         ordAt = ord . Text.index chars
 
 toId :: Int -> Text -> Text
-toId num alphabet = Text.reverse (fun num)
+toId num alphabet = Text.reverse (mu num)
   where
     len = Text.length alphabet
-    fun n = 
-      let next = if m == 0 then Text.empty else fun m
+    mu n = 
+      let next = if m == 0 then Text.empty else mu m
           (m, r) = n `divMod` len in Text.cons (Text.index alphabet r) next
 
 toNumber :: Text -> Text -> Int
