@@ -176,9 +176,14 @@ toId num alphabet = Text.reverse (fun num)
       let next = if m == 0 then Text.empty else fun m
           (m, r) = n `divMod` len in Text.cons (Text.index alphabet r) next
 
-toNumber :: (Integral n) => String -> String -> n
-toNumber _id alphabet =
-  undefined
+toNumber :: Text -> Text -> Int
+toNumber _id alphabet = Text.foldl' mu 0 _id
+  where
+    len = Text.length alphabet
+    mu v c = 
+      case Text.findIndex (== c) alphabet of
+        Just n -> len * v + n
+        _ -> error "toNumber: bad input"
 
 isBlockedId :: String -> Bool
 isBlockedId _id =

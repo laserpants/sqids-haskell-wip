@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Sqids (shuffle, toId)
+import Sqids.Sqids (shuffle, toId, toNumber)
 import Sqids.Utils (swapChars)
 import Test.Hspec
 
@@ -27,7 +27,16 @@ testToId = do
       let msg = num <> " " <> alphabet 
        in it msg (toId (read num) (pack alphabet) == pack result)
     _ ->
-      error "testShuffle: bad input"
+      error "testToId: bad input"
+
+testToNumber :: SpecWith ()
+testToNumber = do
+  withTestData "toNumber" $ \case
+    _id : alphabet : result : _ ->
+      let msg = _id <> " " <> alphabet 
+       in it msg (toNumber (pack _id) (pack alphabet) == read result)
+    _ ->
+      error "testToNumber: bad input"
 
 testShuffle :: SpecWith ()
 testShuffle = do
@@ -43,3 +52,4 @@ main =
     testShuffle
     testSwapChars
     testToId
+    testToNumber
