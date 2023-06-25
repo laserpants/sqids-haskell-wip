@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
-import Control.Monad (mapM_)
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Sqids (shuffle)
+import Sqids.Sqids (shuffle, toId)
 import Sqids.Utils (swapChars)
 import Test.Hspec
 
@@ -21,6 +20,15 @@ testSwapChars = do
     _ ->
       error "testSwapChars: bad input"
 
+testToId :: SpecWith ()
+testToId = do
+  withTestData "toId" $ \case
+    num : alphabet : result : _ ->
+      let msg = num <> " " <> alphabet 
+       in it msg (toId (read num) (pack alphabet) == pack result)
+    _ ->
+      error "testShuffle: bad input"
+
 testShuffle :: SpecWith ()
 testShuffle = do
   withTestData "shuffle" $ \case
@@ -34,3 +42,4 @@ main =
   hspec $ do
     testShuffle
     testSwapChars
+    testToId

@@ -2,10 +2,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module Sqids.Sqids 
-  ( shuffle
-  , sqidsVersion
-  , defaultSqidsState
-  ) where
+  where
+--  ( shuffle
+--  , sqidsVersion
+--  , defaultSqidsState
+--  ) where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
@@ -167,9 +168,13 @@ shuffle alphabet = foldl' mu alphabet ixs
       where
         ordAt = ord . Text.index chars
 
-toId :: (Integral n) => n -> String -> String
-toId number alphabet =
-  undefined
+toId :: Int -> Text -> Text
+toId num alphabet = Text.reverse (fun num)
+  where
+    len = Text.length alphabet
+    fun n = 
+      let next = if m == 0 then Text.empty else fun m
+          (m, r) = n `divMod` len in Text.cons (Text.index alphabet r) next
 
 toNumber :: (Integral n) => String -> String -> n
 toNumber _id alphabet =

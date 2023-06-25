@@ -2,3 +2,4 @@
 0|0|abc|abc
 1|2|abc|acb
 1|2|aabbcc|ababcc
+0|0|a|a
