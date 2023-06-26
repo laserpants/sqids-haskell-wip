@@ -1,4 +1,4 @@
-module Sqids.Utils.Internal 
+module Sqids.Utils.Internal
   ( swapChars
   , replaceCharAtIndex
   , wordsNoLongerThan
@@ -29,7 +29,7 @@ wordsNoLongerThan :: Int -> [Text] -> [Text]
 wordsNoLongerThan n = filter ((<= n) . Text.length)
 
 findChar :: Char -> Text -> Maybe Int
-findChar = Text.findIndex . (==) 
+findChar = Text.findIndex . (==)
 
 modifyM :: (MonadState s m) => (s -> m s) -> m ()
 modifyM f = get >>= f >>= put

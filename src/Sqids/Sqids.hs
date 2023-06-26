@@ -1,4 +1,4 @@
-module Sqids.Sqids 
+module Sqids.Sqids
   ( sqidsOptions
   , sqidsVersion
   , defaultSqidsOptions

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
-module Sqids.Internal 
+module Sqids.Internal
   ( shuffle
   , sqidsVersion
   , sqidsOptions
@@ -44,16 +44,16 @@ sqidsVersion = "?"
 data SqidsOptions = SqidsOptions
   { alphabet  :: Text
   -- ^ URL-safe characters
-  , minLength :: Int       
+  , minLength :: Int
   -- ^ The minimum allowed length of IDs
-  , blacklist :: [Text]  
+  , blacklist :: [Text]
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
 newtype Verified a = Verified { getVerified :: a }
   deriving (Show, Read, Eq, Ord)
 
-data SqidsError 
+data SqidsError
   = SqidsAlphabetTooShortError
   deriving (Show, Read, Eq, Ord)
 
@@ -70,7 +70,7 @@ defaultSqidsOptions = SqidsOptions
 type SqidsStack m = StateT (Verified SqidsOptions) (ExceptT SqidsError m)
 
 newtype SqidsT m a = SqidsT { unwrapSqidsT :: SqidsStack m a }
-  deriving 
+  deriving
     ( Functor
     , Applicative
     , Monad
@@ -82,7 +82,7 @@ instance MonadTrans SqidsT where
   lift = SqidsT . lift . lift
 
 newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
-  deriving 
+  deriving
     ( Functor
     , Applicative
     , Monad
@@ -91,9 +91,9 @@ newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
     )
 
 runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m (Either SqidsError a)
-runSqidsT options _sqids = 
+runSqidsT options _sqids =
   runExceptT (evalStateT (unwrapSqidsT withOptions) (Verified emptySqidsOptions))
-  where 
+  where
     withOptions = sqidsOptions options >>= put >> _sqids
 
 sqidsT :: (Monad m) => SqidsT m a -> m (Either SqidsError a)
@@ -120,18 +120,18 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   decode = undefined
   --
   getAlphabet = gets (alphabet . getVerified)
-  setAlphabet newAlphabet = 
-    modifyM $ \(Verified o) -> 
+  setAlphabet newAlphabet =
+    modifyM $ \(Verified o) ->
       sqidsOptions o{ alphabet = newAlphabet }
   --
   getMinLength = gets (minLength . getVerified)
-  setMinLength newMinLength = 
-    modifyM $ \(Verified o) -> 
+  setMinLength newMinLength =
+    modifyM $ \(Verified o) ->
       sqidsOptions o{ minLength = newMinLength }
   --
   getBlacklist = gets (blacklist . getVerified)
-  setBlacklist newBlacklist = 
-    modifyM $ \(Verified o) -> 
+  setBlacklist newBlacklist =
+    modifyM $ \(Verified o) ->
       sqidsOptions o{ blacklist = newBlacklist }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
@@ -206,7 +206,7 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
 
 -- | SqidsOptions constructor
 sqidsOptions :: (MonadSqids m) => SqidsOptions -> m (Verified SqidsOptions)
-sqidsOptions SqidsOptions{..} = 
+sqidsOptions SqidsOptions{..} =
   pure $ Verified $ SqidsOptions
     { alphabet  = alphabet
     , minLength = minLength
@@ -221,7 +221,7 @@ encodeNumbers numbers partitioned =
 
 shuffle :: Text -> Text
 shuffle chars = foldl' mu chars ixs
-  where 
+  where
     len = Text.length chars
     ixs = [ (i, j) | i <- [ 0 .. len - 2 ], let j = len - i - 1 ]
     --
@@ -235,7 +235,7 @@ toId :: Int -> Text -> Text
 toId num chars = Text.reverse (mu num)
   where
     len = Text.length chars
-    mu n = 
+    mu n =
       let next = if m == 0 then Text.empty else mu m
           (m, r) = n `divMod` len in Text.cons (Text.index chars r) next
 
@@ -243,7 +243,7 @@ toNumber :: Text -> Text -> Int
 toNumber _id chars = Text.foldl' mu 0 _id
   where
     len = Text.length chars
-    mu v c = 
+    mu v c =
       case findChar c chars of
         Just n -> len * v + n
         _ -> error "toNumber: bad input"
@@ -255,12 +255,12 @@ isBlockedId _id = do
   where
     theId = Text.toLower _id
     disallowed w
-      | Text.length theId <= 3 || Text.length w <= 3 = 
+      | Text.length theId <= 3 || Text.length w <= 3 =
         -- Short words have to match exactly
         w == theId
-      | Text.any isDigit w = 
+      | Text.any isDigit w =
         -- Look for "leetspeak" words
         w `Text.isPrefixOf` theId || w `Text.isSuffixOf` theId
-      | otherwise = 
+      | otherwise =
         -- Check if word appears anywhere in the string
         w `Text.isInfixOf` theId

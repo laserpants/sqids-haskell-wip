@@ -24,7 +24,7 @@ testToId :: SpecWith ()
 testToId = do
   withTestData "toId" $ \case
     num : alphabet : result : _ ->
-      let msg = num <> " " <> alphabet 
+      let msg = num <> " " <> alphabet
        in it msg (toId (read num) (pack alphabet) == pack result)
     _ ->
       error "testToId: bad input"
@@ -33,7 +33,7 @@ testToNumber :: SpecWith ()
 testToNumber = do
   withTestData "toNumber" $ \case
     _id : alphabet : result : _ ->
-      let msg = _id <> " " <> alphabet 
+      let msg = _id <> " " <> alphabet
        in it msg (toNumber (pack _id) (pack alphabet) == read result)
     _ ->
       error "testToNumber: bad input"
@@ -42,7 +42,7 @@ testIsBlockedId :: SpecWith ()
 testIsBlockedId = do
   withTestData "isBlockedId" $ \case
     blacklist : _id : result : _ ->
-      let msg = blacklist <> " " <> _id 
+      let msg = blacklist <> " " <> _id
           _words = pack <$> splitOn "," blacklist
           options = defaultSqidsOptions{ blacklist = _words }
        in it msg (runSqids options (isBlockedId (pack _id)) == Right (read result))
