@@ -48,17 +48,11 @@ data SqidsOptions = SqidsOptions
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
+data Verified a = Verified a
+
 data SqidsError 
   = SqidsAlphabetTooShortError
   deriving (Show, Read, Eq, Ord)
-
--- | SqidsOptions constructor
-sqidsOptions :: Text -> Int -> [Text] -> SqidsOptions
-sqidsOptions _alphabet _minLength _blacklist = SqidsOptions
-  { alphabet  = _alphabet
-  , minLength = _minLength
-  , blacklist = _blacklist
-  }
 
 defaultSqidsOptions :: SqidsOptions
 defaultSqidsOptions = SqidsOptions
@@ -102,17 +96,20 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   getAlphabet = gets alphabet
-  setAlphabet newAlphabet = modify $ 
-    \(SqidsOptions _ _minLength _blacklist) -> 
-      sqidsOptions newAlphabet _minLength _blacklist
+  setAlphabet newAlphabet = undefined
+  --modify $ 
+--    \(SqidsOptions _ _minLength _blacklist) -> 
+--      sqidsOptions newAlphabet _minLength _blacklist
   getMinLength = gets minLength
-  setMinLength newMinLength = modify $ 
-    \(SqidsOptions _alphabet _ _blacklist) -> 
-      sqidsOptions _alphabet newMinLength _blacklist
+  setMinLength newMinLength = undefined
+--  modify $ 
+  --  \(SqidsOptions _alphabet _ _blacklist) -> 
+  --    sqidsOptions _alphabet newMinLength _blacklist
   getBlacklist = gets blacklist
-  setBlacklist newBlacklist = modify $ 
-    \(SqidsOptions _alphabet _minLength _) -> 
-      sqidsOptions _alphabet _minLength newBlacklist
+  setBlacklist newBlacklist = undefined
+  -- modify $ 
+  --  \(SqidsOptions _alphabet _minLength _) -> 
+  --    sqidsOptions _alphabet _minLength newBlacklist
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
@@ -184,8 +181,16 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
   getBlacklist = lift getBlacklist
   setBlacklist = lift . setBlacklist
 
+-- | SqidsOptions constructor
+sqidsOptions :: (MonadSqids m) => Text -> Int -> [Text] -> m SqidsOptions
+sqidsOptions _alphabet _minLength _blacklist = pure $ SqidsOptions
+  { alphabet  = _alphabet
+  , minLength = _minLength
+  , blacklist = _blacklist
+  }
+
 -- | Internal function that encodes an array of unsigned integers into an ID
-encodeNumbers :: (Integral n) => [n] -> Bool -> Sqids Text
+encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text
 encodeNumbers numbers partitioned =
   undefined
 
