@@ -48,8 +48,8 @@ data SqidsOptions = SqidsOptions
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
-data SqidsError = 
-  SqidsAlphabetTooShortError
+data SqidsError 
+  = SqidsAlphabetTooShortError
   deriving (Show, Read, Eq, Ord)
 
 -- | SqidsOptions constructor
