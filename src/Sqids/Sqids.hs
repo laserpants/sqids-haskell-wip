@@ -5,6 +5,8 @@ module Sqids.Sqids
   , defaultSqidsOptions
   , Sqids
   , SqidsT
+  , runSqids
+  , runSqidsT
   , MonadSqids(..)
   , isBlockedId
   ) where
