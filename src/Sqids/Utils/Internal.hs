@@ -6,9 +6,10 @@ module Sqids.Utils.Internal
   , modifyM
   ) where
 
-import Data.Text (Text)
-import qualified Data.Text as Text
 import Control.Monad.State.Strict (MonadState, get, put)
+import Data.Text (Text)
+
+import qualified Data.Text as Text
 
 swapChars :: Int -> Int -> Text -> Text
 swapChars m n input =
