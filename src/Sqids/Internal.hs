@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 module Sqids.Internal 
   ( shuffle
   , sqidsVersion
@@ -32,7 +33,7 @@ import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
 import Data.List (foldl')
 import Data.Text (Text)
-import Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar)
+import Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
 
 import qualified Data.Text as Text
 
@@ -66,14 +67,28 @@ defaultSqidsOptions = SqidsOptions
   , blacklist = []
   }
 
-newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT (Verified SqidsOptions) (ExceptT SqidsError m) a }
-  deriving (Functor, Applicative, Monad, MonadState (Verified SqidsOptions), MonadError SqidsError)
+type SqidsStack m = StateT (Verified SqidsOptions) (ExceptT SqidsError m)
+
+newtype SqidsT m a = SqidsT { unwrapSqidsT :: SqidsStack m a }
+  deriving 
+    ( Functor
+    , Applicative
+    , Monad
+    , MonadState (Verified SqidsOptions)
+    , MonadError SqidsError
+    )
 
 instance MonadTrans SqidsT where
   lift = SqidsT . lift . lift
 
 newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
-  deriving (Functor, Applicative, Monad, MonadState (Verified SqidsOptions), MonadSqids)
+  deriving 
+    ( Functor
+    , Applicative
+    , Monad
+    , MonadState (Verified SqidsOptions)
+    , MonadSqids
+    )
 
 runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m (Either SqidsError a)
 runSqidsT options _sqids = 
@@ -100,24 +115,24 @@ class (Monad m) => MonadSqids m where
   getBlacklist :: m [Text]
   setBlacklist :: [Text] -> m ()
 
-modifyM :: (MonadState s m) => (s -> m s) -> m ()
-modifyM f = get >>= f >>= put
-
 instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   --
   getAlphabet = gets (alphabet . getVerified)
   setAlphabet newAlphabet = 
-    modifyM $ \(Verified s) -> sqidsOptions s{ alphabet = newAlphabet }
+    modifyM $ \(Verified o) -> 
+      sqidsOptions o{ alphabet = newAlphabet }
   --
   getMinLength = gets (minLength . getVerified)
   setMinLength newMinLength = 
-    modifyM $ \(Verified s) -> sqidsOptions s{ minLength = newMinLength }
+    modifyM $ \(Verified o) -> 
+      sqidsOptions o{ minLength = newMinLength }
   --
   getBlacklist = gets (blacklist . getVerified)
   setBlacklist newBlacklist = 
-    modifyM $ \(Verified s) -> sqidsOptions s{ blacklist = newBlacklist }
+    modifyM $ \(Verified o) -> 
+      sqidsOptions o{ blacklist = newBlacklist }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
@@ -191,11 +206,11 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
 
 -- | SqidsOptions constructor
 sqidsOptions :: (MonadSqids m) => SqidsOptions -> m (Verified SqidsOptions)
-sqidsOptions (SqidsOptions _alphabet _minLength _blacklist) = 
+sqidsOptions SqidsOptions{..} = 
   pure $ Verified $ SqidsOptions
-    { alphabet  = _alphabet
-    , minLength = _minLength
-    , blacklist = _blacklist
+    { alphabet  = alphabet
+    , minLength = minLength
+    , blacklist = blacklist
     }
 --  where -- TODO
 

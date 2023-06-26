@@ -1,16 +1,16 @@
 module Sqids.Sqids 
-  ( sqids
-  , sqidsT
-  , sqidsOptions
+  ( sqidsOptions
+  , sqidsVersion
   , defaultSqidsOptions
-  , Sqids
-  , SqidsT
+  , sqids
+  , sqidsT
   , runSqids
   , runSqidsT
+  , Sqids
+  , SqidsT
   , MonadSqids(..)
   , SqidsError(..)
   , SqidsOptions(..)
-  , isBlockedId
   ) where
 
 import Sqids.Internal
