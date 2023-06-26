@@ -40,6 +40,14 @@ data SqidsState = SqidsState
   -- ^ The minimum allowed length of IDs
   , blacklist :: [Text]  
   -- ^ A list of words that must never appear in IDs
+  } deriving (Show, Eq, Ord)
+
+-- | SqidsState constructor
+sqidsState :: SqidsState -> SqidsState
+sqidsState _state = SqidsState
+  { alphabet  = alphabet _state
+  , minLength = minLength _state
+  , blacklist = blacklist _state
   }
 
 defaultSqidsState :: SqidsState
@@ -81,11 +89,11 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   getAlphabet = gets alphabet
-  setAlphabet new = modify $ \old -> old{ alphabet = new }
+  setAlphabet new = modify $ \o -> sqidsState o{ alphabet = new }
   getMinLength = gets minLength
-  setMinLength new = modify $ \old -> old{ minLength = new }
+  setMinLength new = modify $ \o -> sqidsState o{ minLength = new }
   getBlacklist = gets blacklist
-  setBlacklist new = modify $ \old -> old{ blacklist = new }
+  setBlacklist new = modify $ \o -> sqidsState o{ blacklist = new }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
