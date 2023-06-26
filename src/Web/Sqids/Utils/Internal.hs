@@ -1,4 +1,4 @@
-module Sqids.Utils.Internal
+module Web.Sqids.Utils.Internal
   ( swapChars
   , replaceCharAtIndex
   , wordsNoLongerThan

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Sqids.Internal
+module Web.Sqids.Internal
   ( shuffle
   , sqidsVersion
   , sqidsOptions
@@ -26,7 +26,7 @@ import Control.Monad (when)
 import Control.Monad.Except (ExceptT, runExceptT, MonadError, throwError)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, get, put)
+import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, put)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Maybe (MaybeT)
@@ -35,7 +35,7 @@ import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
 import Data.List (foldl', nub)
 import Data.Text (Text)
-import Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
+import Web.Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
 
 import qualified Data.Text as Text
 

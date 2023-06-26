@@ -2,9 +2,9 @@
 {-# LANGUAGE LambdaCase #-}
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, SqidsOptions(..), Verified(..))
-import Sqids.Utils.Internal (swapChars)
 import Test.Hspec
+import Web.Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, SqidsOptions(..), Verified(..))
+import Web.Sqids.Utils.Internal (swapChars)
 
 withTestData :: FilePath -> ([String] -> SpecWith ()) -> SpecWith ()
 withTestData name mu = do

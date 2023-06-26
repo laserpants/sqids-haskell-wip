@@ -1,4 +1,4 @@
-module Sqids.Sqids
+module Web.Sqids
   ( sqidsOptions
   , sqidsVersion
   , defaultSqidsOptions
@@ -13,4 +13,4 @@ module Sqids.Sqids
   , SqidsOptions(..)
   ) where
 
-import Sqids.Internal
+import Web.Sqids.Internal
