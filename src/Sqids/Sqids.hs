@@ -8,6 +8,7 @@ module Sqids.Sqids
   , runSqids
   , runSqidsT
   , MonadSqids(..)
+  , SqidsError(..)
   , isBlockedId
   ) where
 

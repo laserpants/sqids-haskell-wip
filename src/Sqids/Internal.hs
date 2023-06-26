@@ -13,12 +13,13 @@ module Sqids.Internal
   , Sqids(..)
   , SqidsT(..)
   , MonadSqids(..)
+  , SqidsError(..)
   , toId
   , toNumber
   , encodeNumbers
   ) where
 
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify)
@@ -47,6 +48,9 @@ data SqidsOptions = SqidsOptions
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
+data SqidsError = Foo
+  deriving (Show, Eq, Ord)
+
 -- | SqidsOptions constructor
 sqidsOptions :: Text -> Int -> [Text] -> SqidsOptions
 sqidsOptions _alphabet _minLength _blacklist = SqidsOptions
@@ -62,22 +66,25 @@ defaultSqidsOptions = SqidsOptions
   , blacklist = []
   }
 
-newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsOptions m a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadTrans)
+newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsOptions (ExceptT SqidsError m) a }
+  deriving (Functor, Applicative, Monad, MonadState SqidsOptions)
+
+instance MonadTrans SqidsT where
+  lift = SqidsT . lift . lift
 
 newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
   deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadSqids)
 
-runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m a
-runSqidsT options = flip evalStateT options . unwrapSqidsT
+runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m (Either SqidsError a)
+runSqidsT options s = runExceptT (evalStateT (unwrapSqidsT s) options)
 
-sqidsT :: (Monad m) => SqidsT m a -> m a
+sqidsT :: (Monad m) => SqidsT m a -> m (Either SqidsError a)
 sqidsT = runSqidsT defaultSqidsOptions
 
-runSqids :: SqidsOptions -> Sqids a -> a
+runSqids :: SqidsOptions -> Sqids a -> Either SqidsError a
 runSqids options = runIdentity . runSqidsT options . unwrapSqids
 
-sqids :: Sqids a -> a
+sqids :: Sqids a -> Either SqidsError a
 sqids = runSqids defaultSqidsOptions
 
 class (Monad m) => MonadSqids m where
