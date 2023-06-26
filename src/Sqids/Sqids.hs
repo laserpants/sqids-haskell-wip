@@ -1,7 +1,7 @@
 module Sqids.Sqids 
   ( sqids
   , sqidsT
-  , sqidsState
+  , sqidsOptions
   , defaultSqidsOptions
   , Sqids
   , SqidsT

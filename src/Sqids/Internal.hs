@@ -2,7 +2,7 @@
 module Sqids.Internal 
   ( shuffle
   , sqidsVersion
-  , sqidsState
+  , sqidsOptions
   , defaultSqidsOptions
   , isBlockedId
   , runSqids
@@ -47,8 +47,8 @@ data SqidsOptions = SqidsOptions
   } deriving (Show, Eq, Ord)
 
 -- | SqidsOptions constructor
-sqidsState :: SqidsOptions -> SqidsOptions
-sqidsState _state = SqidsOptions
+sqidsOptions :: SqidsOptions -> SqidsOptions
+sqidsOptions _state = SqidsOptions
   { alphabet  = alphabet _state
   , minLength = minLength _state
   , blacklist = blacklist _state
@@ -93,11 +93,11 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   getAlphabet = gets alphabet
-  setAlphabet new = modify $ \o -> sqidsState o{ alphabet = new }
+  setAlphabet new = modify $ \o -> sqidsOptions o{ alphabet = new }
   getMinLength = gets minLength
-  setMinLength new = modify $ \o -> sqidsState o{ minLength = new }
+  setMinLength new = modify $ \o -> sqidsOptions o{ minLength = new }
   getBlacklist = gets blacklist
-  setBlacklist new = modify $ \o -> sqidsState o{ blacklist = new }
+  setBlacklist new = modify $ \o -> sqidsOptions o{ blacklist = new }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
