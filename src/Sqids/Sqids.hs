@@ -2,7 +2,7 @@ module Sqids.Sqids
   ( sqids
   , sqidsT
   , sqidsState
-  , defaultSqidsState
+  , defaultSqidsOptions
   , Sqids
   , SqidsT
   , MonadSqids(..)

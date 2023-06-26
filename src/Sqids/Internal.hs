@@ -3,13 +3,13 @@ module Sqids.Internal
   ( shuffle
   , sqidsVersion
   , sqidsState
-  , defaultSqidsState
+  , defaultSqidsOptions
   , isBlockedId
   , runSqids
   , runSqidsT
   , sqids
   , sqidsT
-  , SqidsState(..)
+  , SqidsOptions(..)
   , Sqids(..)
   , SqidsT(..)
   , MonadSqids(..)
@@ -37,7 +37,7 @@ import qualified Data.Text as Text
 sqidsVersion :: String
 sqidsVersion = "?"
 
-data SqidsState = SqidsState
+data SqidsOptions = SqidsOptions
   { alphabet  :: Text
   -- ^ URL-safe characters
   , minLength :: Int       
@@ -46,38 +46,38 @@ data SqidsState = SqidsState
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
--- | SqidsState constructor
-sqidsState :: SqidsState -> SqidsState
-sqidsState _state = SqidsState
+-- | SqidsOptions constructor
+sqidsState :: SqidsOptions -> SqidsOptions
+sqidsState _state = SqidsOptions
   { alphabet  = alphabet _state
   , minLength = minLength _state
   , blacklist = blacklist _state
   }
 
-defaultSqidsState :: SqidsState
-defaultSqidsState = SqidsState
+defaultSqidsOptions :: SqidsOptions
+defaultSqidsOptions = SqidsOptions
   { alphabet  = Text.pack "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   , minLength = 0
   , blacklist = []
   }
 
-newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsState m a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsState, MonadTrans)
+newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsOptions m a }
+  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadTrans)
 
 newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsState, MonadSqids)
+  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadSqids)
 
-runSqidsT :: (Monad m) => SqidsState -> SqidsT m a -> m a
+runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m a
 runSqidsT _state = flip evalStateT _state . unwrapSqidsT
 
 sqidsT :: (Monad m) => SqidsT m a -> m a
-sqidsT = runSqidsT defaultSqidsState
+sqidsT = runSqidsT defaultSqidsOptions
 
-runSqids :: SqidsState -> Sqids a -> a
+runSqids :: SqidsOptions -> Sqids a -> a
 runSqids _state = runIdentity . runSqidsT _state . unwrapSqids
 
 sqids :: Sqids a -> a
-sqids = runSqids defaultSqidsState
+sqids = runSqids defaultSqidsOptions
 
 class (Monad m) => MonadSqids m where
   encode :: (Integral n) => [n] -> m String
