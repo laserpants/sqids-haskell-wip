@@ -19,7 +19,7 @@ module Sqids.Internal
   , encodeNumbers
   ) where
 
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (ExceptT, runExceptT, MonadError)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify)
@@ -48,8 +48,9 @@ data SqidsOptions = SqidsOptions
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
-data SqidsError = Foo
-  deriving (Show, Eq, Ord)
+data SqidsError = 
+  SqidsAlphabetTooShortError
+  deriving (Show, Read, Eq, Ord)
 
 -- | SqidsOptions constructor
 sqidsOptions :: Text -> Int -> [Text] -> SqidsOptions
@@ -67,7 +68,7 @@ defaultSqidsOptions = SqidsOptions
   }
 
 newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsOptions (ExceptT SqidsError m) a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsOptions)
+  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadError SqidsError)
 
 instance MonadTrans SqidsT where
   lift = SqidsT . lift . lift

@@ -45,7 +45,7 @@ testIsBlockedId = do
       let msg = blacklist <> " " <> _id 
           _words = pack <$> splitOn "," blacklist
           _state = defaultSqidsOptions{ blacklist = _words }
-       in it msg (runSqids _state (isBlockedId (pack _id)) == read result)
+       in it msg (runSqids _state (isBlockedId (pack _id)) == Right (read result))
     _ ->
       error "testIsBlockedId: bad input"
 
