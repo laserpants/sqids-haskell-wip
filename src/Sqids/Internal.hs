@@ -87,6 +87,7 @@ newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
     , Applicative
     , Monad
     , MonadState (Verified SqidsOptions)
+    , MonadError SqidsError
     , MonadSqids
     )
 
@@ -216,7 +217,7 @@ sqidsOptions SqidsOptions{..} =
 
 -- | Internal function that encodes an array of unsigned integers into an ID
 encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text
-encodeNumbers numbers partitioned =
+encodeNumbers numbers partitioned = do
   undefined
 
 shuffle :: Text -> Text
