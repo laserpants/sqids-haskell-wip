@@ -58,6 +58,7 @@ newtype Verified a = Verified { getVerified :: a }
 data SqidsError
   = SqidsAlphabetTooShortError
   | SqidsAlphabetRepeatedCharacters
+  | SqidsInvalidMinLength
   deriving (Show, Read, Eq, Ord)
 
 emptySqidsOptions :: SqidsOptions
@@ -206,7 +207,10 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
   setBlacklist = lift . setBlacklist
 
 -- | SqidsOptions constructor
-sqidsOptions :: (MonadSqids m, MonadError SqidsError m) => SqidsOptions -> m (Verified SqidsOptions)
+sqidsOptions
+  :: (MonadSqids m, MonadError SqidsError m)
+  => SqidsOptions
+  -> m (Verified SqidsOptions)
 sqidsOptions SqidsOptions{..} = do
 
   -- Check the length of the alphabet
@@ -218,12 +222,17 @@ sqidsOptions SqidsOptions{..} = do
   when (nub chars /= chars) $
     throwError SqidsAlphabetRepeatedCharacters
 
+  -- Validate min. length
+  when (minLength < 0 || minLength > Text.length alphabet) $
+    throwError SqidsInvalidMinLength
+
+  -- Clean up blacklist
+
   pure $ Verified $ SqidsOptions
-    { alphabet  = alphabet
+    { alphabet  = shuffle alphabet
     , minLength = minLength
     , blacklist = blacklist
     }
---  where -- TODO
 
 -- | Internal function that encodes an array of unsigned integers into an ID
 encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text
