@@ -21,7 +21,8 @@ module Sqids.Internal
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, lift)
+import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Select (SelectT)
@@ -48,10 +49,10 @@ data SqidsOptions = SqidsOptions
 
 -- | SqidsOptions constructor
 sqidsOptions :: Text -> Int -> [Text] -> SqidsOptions
-sqidsOptions alphabet minLength blacklist = SqidsOptions
-  { alphabet  = alphabet
-  , minLength = minLength
-  , blacklist = blacklist
+sqidsOptions _alphabet _minLength _blacklist = SqidsOptions
+  { alphabet  = _alphabet
+  , minLength = _minLength
+  , blacklist = _blacklist
   }
 
 defaultSqidsOptions :: SqidsOptions
