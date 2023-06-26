@@ -14,6 +14,7 @@ module Sqids.Internal
   , SqidsT(..)
   , MonadSqids(..)
   , SqidsError(..)
+  , Verified(..)
   , toId
   , toNumber
   , encodeNumbers
@@ -22,7 +23,7 @@ module Sqids.Internal
 import Control.Monad.Except (ExceptT, runExceptT, MonadError)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify)
+import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, get, put)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Maybe (MaybeT)
@@ -48,11 +49,15 @@ data SqidsOptions = SqidsOptions
   -- ^ A list of words that must never appear in IDs
   } deriving (Show, Eq, Ord)
 
-data Verified a = Verified a
+newtype Verified a = Verified { getVerified :: a }
+  deriving (Show, Read, Eq, Ord)
 
 data SqidsError 
   = SqidsAlphabetTooShortError
   deriving (Show, Read, Eq, Ord)
+
+emptySqidsOptions :: SqidsOptions
+emptySqidsOptions = SqidsOptions mempty 0 []
 
 defaultSqidsOptions :: SqidsOptions
 defaultSqidsOptions = SqidsOptions
@@ -61,17 +66,20 @@ defaultSqidsOptions = SqidsOptions
   , blacklist = []
   }
 
-newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT SqidsOptions (ExceptT SqidsError m) a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadError SqidsError)
+newtype SqidsT m a = SqidsT { unwrapSqidsT :: StateT (Verified SqidsOptions) (ExceptT SqidsError m) a }
+  deriving (Functor, Applicative, Monad, MonadState (Verified SqidsOptions), MonadError SqidsError)
 
 instance MonadTrans SqidsT where
   lift = SqidsT . lift . lift
 
 newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
-  deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadSqids)
+  deriving (Functor, Applicative, Monad, MonadState (Verified SqidsOptions), MonadSqids)
 
 runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m (Either SqidsError a)
-runSqidsT options s = runExceptT (evalStateT (unwrapSqidsT s) options)
+runSqidsT options _sqids = 
+  runExceptT (evalStateT (unwrapSqidsT withOptions) (Verified emptySqidsOptions))
+  where 
+    withOptions = sqidsOptions options >>= put >> _sqids
 
 sqidsT :: (Monad m) => SqidsT m a -> m (Either SqidsError a)
 sqidsT = runSqidsT defaultSqidsOptions
@@ -92,24 +100,24 @@ class (Monad m) => MonadSqids m where
   getBlacklist :: m [Text]
   setBlacklist :: [Text] -> m ()
 
+modifyM :: (MonadState s m) => (s -> m s) -> m ()
+modifyM f = get >>= f >>= put
+
 instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
-  getAlphabet = gets alphabet
-  setAlphabet newAlphabet = undefined
-  --modify $ 
---    \(SqidsOptions _ _minLength _blacklist) -> 
---      sqidsOptions newAlphabet _minLength _blacklist
-  getMinLength = gets minLength
-  setMinLength newMinLength = undefined
---  modify $ 
-  --  \(SqidsOptions _alphabet _ _blacklist) -> 
-  --    sqidsOptions _alphabet newMinLength _blacklist
-  getBlacklist = gets blacklist
-  setBlacklist newBlacklist = undefined
-  -- modify $ 
-  --  \(SqidsOptions _alphabet _minLength _) -> 
-  --    sqidsOptions _alphabet _minLength newBlacklist
+  --
+  getAlphabet = gets (alphabet . getVerified)
+  setAlphabet newAlphabet = 
+    modifyM $ \(Verified s) -> sqidsOptions s{ alphabet = newAlphabet }
+  --
+  getMinLength = gets (minLength . getVerified)
+  setMinLength newMinLength = 
+    modifyM $ \(Verified s) -> sqidsOptions s{ minLength = newMinLength }
+  --
+  getBlacklist = gets (blacklist . getVerified)
+  setBlacklist newBlacklist = 
+    modifyM $ \(Verified s) -> sqidsOptions s{ blacklist = newBlacklist }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
@@ -182,12 +190,14 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
   setBlacklist = lift . setBlacklist
 
 -- | SqidsOptions constructor
-sqidsOptions :: (MonadSqids m) => Text -> Int -> [Text] -> m SqidsOptions
-sqidsOptions _alphabet _minLength _blacklist = pure $ SqidsOptions
-  { alphabet  = _alphabet
-  , minLength = _minLength
-  , blacklist = _blacklist
-  }
+sqidsOptions :: (MonadSqids m) => SqidsOptions -> m (Verified SqidsOptions)
+sqidsOptions (SqidsOptions _alphabet _minLength _blacklist) = 
+  pure $ Verified $ SqidsOptions
+    { alphabet  = _alphabet
+    , minLength = _minLength
+    , blacklist = _blacklist
+    }
+--  where -- TODO
 
 -- | Internal function that encodes an array of unsigned integers into an ID
 encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text

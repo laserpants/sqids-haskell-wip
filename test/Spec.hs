@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, SqidsOptions(..))
+import Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, SqidsOptions(..), Verified(..))
 import Sqids.Utils.Internal (swapChars)
 import Test.Hspec
 
@@ -44,8 +44,8 @@ testIsBlockedId = do
     blacklist : _id : result : _ ->
       let msg = blacklist <> " " <> _id 
           _words = pack <$> splitOn "," blacklist
-          _state = defaultSqidsOptions{ blacklist = _words }
-       in it msg (runSqids _state (isBlockedId (pack _id)) == Right (read result))
+          options = defaultSqidsOptions{ blacklist = _words }
+       in it msg (runSqids options (isBlockedId (pack _id)) == Right (read result))
     _ ->
       error "testIsBlockedId: bad input"
 
