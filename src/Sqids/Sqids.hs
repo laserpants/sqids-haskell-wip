@@ -19,7 +19,7 @@ import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
 import Data.List (foldl')
 import Data.Text (Text)
-import Sqids.Utils (swapChars, wordsNoLongerThan)
+import Sqids.Utils (swapChars, wordsNoLongerThan, findChar)
 
 import qualified Data.Text as Text
 
@@ -151,10 +151,9 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
   getBlacklist = lift getBlacklist
   setBlacklist = lift . setBlacklist
 
-
 -- | Internal function that encodes an array of unsigned integers into an ID
-encodeNumbers :: (Integral n) => Bool -> [n] -> Sqids Text
-encodeNumbers partitioned numbers =
+encodeNumbers :: (Integral n) => [n] -> Bool -> Sqids Text
+encodeNumbers numbers partitioned =
   undefined
 
 shuffle :: Text -> Text
@@ -182,7 +181,7 @@ toNumber _id chars = Text.foldl' mu 0 _id
   where
     len = Text.length chars
     mu v c = 
-      case Text.findIndex (== c) chars of
+      case findChar c chars of
         Just n -> len * v + n
         _ -> error "toNumber: bad input"
 

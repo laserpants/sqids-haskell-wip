@@ -1,4 +1,4 @@
-module Sqids.Utils (swapChars, wordsNoLongerThan) where
+module Sqids.Utils (swapChars, wordsNoLongerThan, findChar) where
 
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -19,3 +19,6 @@ replaceCharAtIndex n char input = lhs <> Text.cons char rhs
 
 wordsNoLongerThan :: Int -> [Text] -> [Text]
 wordsNoLongerThan n = filter ((<= n) . Text.length)
+
+findChar :: Char -> Text -> Maybe Int
+findChar = Text.findIndex . (==) 
