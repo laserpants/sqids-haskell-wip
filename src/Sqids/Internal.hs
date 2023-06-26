@@ -69,13 +69,13 @@ newtype Sqids a = Sqids { unwrapSqids :: SqidsT Identity a }
   deriving (Functor, Applicative, Monad, MonadState SqidsOptions, MonadSqids)
 
 runSqidsT :: (Monad m) => SqidsOptions -> SqidsT m a -> m a
-runSqidsT _state = flip evalStateT _state . unwrapSqidsT
+runSqidsT options = flip evalStateT options . unwrapSqidsT
 
 sqidsT :: (Monad m) => SqidsT m a -> m a
 sqidsT = runSqidsT defaultSqidsOptions
 
 runSqids :: SqidsOptions -> Sqids a -> a
-runSqids _state = runIdentity . runSqidsT _state . unwrapSqids
+runSqids options = runIdentity . runSqidsT options . unwrapSqids
 
 sqids :: Sqids a -> a
 sqids = runSqids defaultSqidsOptions
