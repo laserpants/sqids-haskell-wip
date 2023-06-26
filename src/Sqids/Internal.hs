@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Sqids.Internal
   ( shuffle
   , sqidsVersion
@@ -21,7 +22,8 @@ module Sqids.Internal
   , encodeNumbers
   ) where
 
-import Control.Monad.Except (ExceptT, runExceptT, MonadError)
+import Control.Monad (when)
+import Control.Monad.Except (ExceptT, runExceptT, MonadError, throwError)
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State.Strict (StateT, MonadState, MonadTrans, evalStateT, gets, modify, get, put)
@@ -31,7 +33,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Select (SelectT)
 import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
-import Data.List (foldl')
+import Data.List (foldl', nub)
 import Data.Text (Text)
 import Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
 
@@ -55,6 +57,7 @@ newtype Verified a = Verified { getVerified :: a }
 
 data SqidsError
   = SqidsAlphabetTooShortError
+  | SqidsAlphabetRepeatedCharacters
   deriving (Show, Read, Eq, Ord)
 
 emptySqidsOptions :: SqidsOptions
@@ -122,18 +125,15 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   --
   getAlphabet = gets (alphabet . getVerified)
   setAlphabet newAlphabet =
-    modifyM $ \(Verified o) ->
-      sqidsOptions o{ alphabet = newAlphabet }
+    modifyM $ \(Verified o) -> sqidsOptions o{ alphabet = newAlphabet }
   --
   getMinLength = gets (minLength . getVerified)
   setMinLength newMinLength =
-    modifyM $ \(Verified o) ->
-      sqidsOptions o{ minLength = newMinLength }
+    modifyM $ \(Verified o) -> sqidsOptions o{ minLength = newMinLength }
   --
   getBlacklist = gets (blacklist . getVerified)
   setBlacklist newBlacklist =
-    modifyM $ \(Verified o) ->
-      sqidsOptions o{ blacklist = newBlacklist }
+    modifyM $ \(Verified o) -> sqidsOptions o{ blacklist = newBlacklist }
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
@@ -206,8 +206,18 @@ instance (MonadSqids m) => MonadSqids (SelectT r m) where
   setBlacklist = lift . setBlacklist
 
 -- | SqidsOptions constructor
-sqidsOptions :: (MonadSqids m) => SqidsOptions -> m (Verified SqidsOptions)
-sqidsOptions SqidsOptions{..} =
+sqidsOptions :: (MonadSqids m, MonadError SqidsError m) => SqidsOptions -> m (Verified SqidsOptions)
+sqidsOptions SqidsOptions{..} = do
+
+  -- Check the length of the alphabet
+  when (Text.length alphabet < 5) $
+    throwError SqidsAlphabetTooShortError
+
+  -- Check that the alphabet has only unique characters
+  let chars = Text.unpack alphabet
+  when (nub chars /= chars) $
+    throwError SqidsAlphabetRepeatedCharacters
+
   pure $ Verified $ SqidsOptions
     { alphabet  = alphabet
     , minLength = minLength
