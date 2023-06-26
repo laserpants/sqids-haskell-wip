@@ -1,8 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Sqids.Internal 
   ( shuffle
   , sqidsVersion
+  , sqidsState
   , defaultSqidsState
   , isBlockedId
   , runSqids
@@ -10,8 +10,12 @@ module Sqids.Internal
   , sqids
   , sqidsT
   , SqidsState(..)
+  , Sqids(..)
+  , SqidsT(..)
+  , MonadSqids(..)
   , toId
   , toNumber
+  , encodeNumbers
   ) where
 
 import Control.Monad.Except (ExceptT)
@@ -52,7 +56,7 @@ sqidsState _state = SqidsState
 
 defaultSqidsState :: SqidsState
 defaultSqidsState = SqidsState
-  { alphabet  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  { alphabet  = Text.pack "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   , minLength = 0
   , blacklist = []
   }
@@ -215,34 +219,3 @@ isBlockedId _id = do
       | otherwise = 
         -- Check if word appears anywhere in the string
         w `Text.isInfixOf` theId
-
---
-
-example :: Text
-example = sqids $ do
-  setAlphabet "xyz"
-  getAlphabet
-
-example2 :: IO ()
-example2 = do 
-  s <- sqidsT $ do
-    setAlphabet "xyz"
-    getAlphabet
-  print s
-  pure ()
-
-example3 :: SqidsT IO ()
-example3 = do
-  s <- do
-    setAlphabet "xyz"
-    getAlphabet
-  lift $ print s
-  pure ()
-
-example4 :: IO ()
-example4 = sqidsT example3
-
-example5 :: Bool
-example5 = sqids $ do
-  setBlacklist ["f00", "baz"]
-  isBlockedId "f00"
