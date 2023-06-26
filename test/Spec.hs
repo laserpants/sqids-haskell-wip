@@ -2,8 +2,8 @@
 {-# LANGUAGE LambdaCase #-}
 import Data.List.Split (splitOn)
 import Data.Text (pack)
-import Sqids.Sqids (shuffle, toId, toNumber, defaultSqidsState, runSqids, isBlockedId, SqidsState(..))
-import Sqids.Utils (swapChars)
+import Sqids.Internal (shuffle, toId, toNumber, defaultSqidsState, runSqids, isBlockedId, SqidsState(..))
+import Sqids.Utils.Internal (swapChars)
 import Test.Hspec
 
 withTestData :: FilePath -> ([String] -> SpecWith ()) -> SpecWith ()

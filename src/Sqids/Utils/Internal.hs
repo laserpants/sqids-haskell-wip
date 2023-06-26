@@ -1,4 +1,9 @@
-module Sqids.Utils (swapChars, wordsNoLongerThan, findChar) where
+module Sqids.Utils.Internal 
+  ( swapChars
+  , replaceCharAtIndex
+  , wordsNoLongerThan
+  , findChar
+  ) where
 
 import Data.Text (Text)
 import qualified Data.Text as Text
