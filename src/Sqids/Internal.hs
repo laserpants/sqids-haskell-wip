@@ -47,11 +47,11 @@ data SqidsOptions = SqidsOptions
   } deriving (Show, Eq, Ord)
 
 -- | SqidsOptions constructor
-sqidsOptions :: SqidsOptions -> SqidsOptions
-sqidsOptions _state = SqidsOptions
-  { alphabet  = alphabet _state
-  , minLength = minLength _state
-  , blacklist = blacklist _state
+sqidsOptions :: Text -> Int -> [Text] -> SqidsOptions
+sqidsOptions alphabet minLength blacklist = SqidsOptions
+  { alphabet  = alphabet
+  , minLength = minLength
+  , blacklist = blacklist
   }
 
 defaultSqidsOptions :: SqidsOptions
@@ -93,11 +93,17 @@ instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
   decode = undefined
   getAlphabet = gets alphabet
-  setAlphabet new = modify $ \o -> sqidsOptions o{ alphabet = new }
+  setAlphabet newAlphabet = modify $ 
+    \(SqidsOptions _ _minLength _blacklist) -> 
+      sqidsOptions newAlphabet _minLength _blacklist
   getMinLength = gets minLength
-  setMinLength new = modify $ \o -> sqidsOptions o{ minLength = new }
+  setMinLength newMinLength = modify $ 
+    \(SqidsOptions _alphabet _ _blacklist) -> 
+      sqidsOptions _alphabet newMinLength _blacklist
   getBlacklist = gets blacklist
-  setBlacklist new = modify $ \o -> sqidsOptions o{ blacklist = new }
+  setBlacklist newBlacklist = modify $ 
+    \(SqidsOptions _alphabet _minLength _) -> 
+      sqidsOptions _alphabet _minLength newBlacklist
 
 instance (MonadSqids m) => MonadSqids (StateT s m) where
   encode = lift . encode
