@@ -3,7 +3,7 @@
 import Data.List.Split (splitOn)
 import Data.Text (pack)
 import Test.Hspec
-import Web.Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, SqidsOptions(..), Verified(..))
+import Web.Sqids.Internal (shuffle, toId, toNumber, defaultSqidsOptions, runSqids, isBlockedId, curatedBlacklist, SqidsOptions(..), Verified(..))
 import Web.Sqids.Utils.Internal (swapChars)
 
 withTestData :: FilePath -> ([String] -> SpecWith ()) -> SpecWith ()
@@ -57,6 +57,17 @@ testShuffle = do
     _ ->
       error "testShuffle: bad input"
 
+testCuratedBlacklist :: SpecWith ()
+testCuratedBlacklist =
+  withTestData "curatedBlacklist" $ \case
+    alphabet : list : result : _ ->
+      let msg = alphabet <> " " <> list
+          _words = pack <$> splitOn "," list
+          results = pack <$> splitOn "," result
+       in it msg (curatedBlacklist (pack alphabet) _words == results)
+    _ ->
+      error "testCuratedBlacklist: bad input"
+
 main :: IO ()
 main =
   hspec $ do
@@ -65,3 +76,4 @@ main =
     testToId
     testToNumber
     testIsBlockedId
+    testCuratedBlacklist

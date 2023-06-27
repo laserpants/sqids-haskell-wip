@@ -20,6 +20,7 @@ module Web.Sqids.Internal
   , toId
   , toNumber
   , encodeNumbers
+  , curatedBlacklist
   ) where
 
 import Control.Monad (when)
@@ -33,7 +34,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import Control.Monad.Trans.Select (SelectT)
 import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
-import Data.List (foldl', nub)
+import Data.List (foldl', nub, intersect)
 import Data.Text (Text)
 import Web.Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
 
@@ -226,13 +227,23 @@ sqidsOptions SqidsOptions{..} = do
   when (minLength < 0 || minLength > Text.length alphabet) $
     throwError SqidsInvalidMinLength
 
-  -- Clean up blacklist
-
   pure $ Verified $ SqidsOptions
     { alphabet  = shuffle alphabet
     , minLength = minLength
-    , blacklist = blacklist
+    , blacklist = curatedBlacklist alphabet blacklist
     }
+
+-- Clean up blacklist:
+--   1. All words must be lowercase
+--   2. No words should be less than three characters
+--   3. Remove words that contain characters that are not in the alphabet
+curatedBlacklist :: Text -> [Text] -> [Text]
+curatedBlacklist alphabet list = Text.toLower <$> filter isOkWord list
+  where
+    chars = Text.unpack alphabet
+    isOkWord w =
+      Text.length w == length (Text.unpack w `intersect` chars) &&
+      Text.length w >= 3
 
 -- | Internal function that encodes an array of unsigned integers into an ID
 encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text
