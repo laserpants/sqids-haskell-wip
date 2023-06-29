@@ -20,6 +20,7 @@ module Web.Sqids.Internal
   , toId
   , toNumber
   , encodeNumbers
+  , decodeWithAlphabet
   , curatedBlacklist
   ) where
 
@@ -36,6 +37,7 @@ import Control.Monad.Writer (WriterT)
 import Data.Char (ord, isDigit)
 import Data.List (foldl', nub, intersect)
 import Data.Text (Text)
+import Data.Maybe (fromJust)
 import Web.Sqids.Utils.Internal (swapChars, wordsNoLongerThan, findChar, modifyM)
 
 import qualified Data.Text as Text
@@ -112,8 +114,8 @@ sqids :: Sqids a -> Either SqidsError a
 sqids = runSqids defaultSqidsOptions
 
 class (Monad m) => MonadSqids m where
-  encode :: (Integral n) => [n] -> m String
-  decode :: (Integral n) => String -> m [n]
+  encode :: (Integral n) => [n] -> m Text
+  decode :: (Integral n) => Text -> m [n]
   getAlphabet :: m Text
   setAlphabet :: Text -> m ()
   getMinLength :: m Int
@@ -123,7 +125,7 @@ class (Monad m) => MonadSqids m where
 
 instance (Monad m) => MonadSqids (SqidsT m) where
   encode = undefined
-  decode = undefined
+  decode _id = getAlphabet >>= decodeWithAlphabet _id
   --
   getAlphabet = gets (alphabet . getVerified)
   setAlphabet newAlphabet =
@@ -246,9 +248,28 @@ curatedBlacklist alphabet list = Text.toLower <$> filter isOkWord list
       Text.length w >= 3
 
 -- | Internal function that encodes an array of unsigned integers into an ID
+--
+-- TODO: Make pure???
 encodeNumbers :: (MonadSqids m, Integral n) => [n] -> Bool -> m Text
 encodeNumbers numbers partitioned = do
   undefined
+
+-- TODO: Make pure???
+decodeWithAlphabet :: (MonadSqids m) => Text -> Text -> m [n]
+decodeWithAlphabet alphabet _id 
+  | Text.empty == _id || not $ all (`Text.elem` alphabet) (Text.unpack _id) =
+      -- If an empty string is given as input, or if any character is not in the
+      -- alphabet, return an empty array
+      pure []
+  | otherwise = do
+
+      -- First character is always the `prefix`
+      let prefix = Text.head _id
+
+      -- `offset` is the semi-random position that was generated during encoding
+      let offset = fromJust (findChar prefix alphabet)
+
+      pure []
 
 shuffle :: Text -> Text
 shuffle chars = foldl' mu chars ixs
